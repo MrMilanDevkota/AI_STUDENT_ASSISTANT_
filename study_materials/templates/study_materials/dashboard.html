@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — AI Study Assistant{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#e0e7ff;">📚</div>
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">Total Materials</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#d1fae5;">✅</div>
+            <div class="stat-value">{{ stats.ready }}</div>
+            <div class="stat-label">Ready to Study</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fef3c7;">⚙️</div>
+            <div class="stat-value">{{ stats.processing }}</div>
+            <div class="stat-label">Processing</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fee2e2;">❌</div>
+            <div class="stat-value">{{ stats.error }}</div>
+            <div class="stat-label">Errors</div>
+        </div>
+    </div>
+</div>
+
+<!-- Materials Grid -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="fw-bold mb-0" style="font-size:1rem;">Your Study Materials</h3>
+    <a href="{% url 'upload' %}" class="btn btn-sm btn-ai">
+        <i class="bi bi-plus-lg me-1"></i> Upload New
+    </a>
+</div>
+
+{% if materials %}
+<div class="row g-3">
+    {% for material in materials %}
+    <div class="col-md-6 col-xl-4">
+        <div class="material-card h-100">
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <!-- File type icon -->
+                <div class="file-icon {{ material.file_type }}">
+                    {% if material.file_type == 'pdf' %}📕
+                    {% elif material.file_type == 'docx' %}📘
+                    {% else %}📄{% endif %}
+                </div>
+                <div class="flex-grow-1 min-width-0">
+                    <h5 class="fw-bold mb-1" style="font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ material.title }}
+                    </h5>
+                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <span class="badge rounded-pill
+                            {% if material.status == 'ready' %}badge-ready
+                            {% elif material.status == 'processing' %}badge-processing
+                            {% elif material.status == 'error' %}badge-error
+                            {% else %}badge-pending{% endif %}
+                            " style="font-size:0.7rem; padding: 0.3em 0.7em;">
+                            {{ material.get_status_display }}
+                        </span>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">
+                            {{ material.file_type|upper }} · {{ material.file_size_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {% if material.description %}
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.75rem; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+                {{ material.description }}
+            </p>
+            {% endif %}
+
+            {% if material.word_count %}
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.75rem;">
+                <i class="bi bi-file-text me-1"></i>{{ material.word_count|floatformat:"0" }} words
+            </p>
+            {% endif %}
+
+            {% if material.error_message %}
+            <div class="alert alert-danger py-2 px-3 mb-3" style="font-size:0.78rem;">
+                <i class="bi bi-exclamation-triangle me-1"></i>{{ material.error_message|truncatewords:15 }}
+            </div>
+            {% endif %}
+
+            {% if material.is_ready %}
+            <!-- AI Feature Buttons -->
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'summary' material.id %}" class="btn btn-sm btn-outline-primary flex-fill" style="font-size:0.78rem;">
+                    <i class="bi bi-file-text me-1"></i>Summary
+                </a>
+                <a href="{% url 'quiz' material.id %}" class="btn btn-sm btn-outline-primary flex-fill" style="font-size:0.78rem;">
+                    <i class="bi bi-question-circle me-1"></i>Quiz
+                </a>
+                <a href="{% url 'flashcards' material.id %}" class="btn btn-sm btn-outline-primary flex-fill" style="font-size:0.78rem;">
+                    <i class="bi bi-collection me-1"></i>Cards
+                </a>
+                <a href="{% url 'chat' material.id %}" class="btn btn-sm btn-ai flex-fill" style="font-size:0.78rem;">
+                    <i class="bi bi-chat-dots me-1"></i>Chat
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Delete -->
+            <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+                <small style="color:var(--text-muted); font-size:0.72rem;">
+                    {{ material.created_at|date:"M d, Y" }}
+                </small>
+                <form method="post" action="{% url 'delete_material' material.id %}" onsubmit="return confirm('Delete \'{{ material.title }}\'?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-link text-danger p-0" style="font-size:0.78rem;">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- Empty state -->
+<div class="text-center py-5">
+    <div style="font-size:4rem; margin-bottom:1rem;">📚</div>
+    <h4 class="fw-bold mb-2">No study materials yet</h4>
+    <p class="text-muted mb-4">Upload your first PDF, DOCX, or TXT file to get started.</p>
+    <a href="{% url 'upload' %}" class="btn btn-ai">
+        <i class="bi bi-cloud-upload me-2"></i>Upload Your First Material
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}

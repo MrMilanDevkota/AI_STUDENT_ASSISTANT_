@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz — {{ material.title }}{% endblock %}
+{% block page_title %}Quiz{% endblock %}
+
+{% block extra_css %}
+<style>
+.quiz-option { cursor: pointer; user-select: none; }
+.answer-reveal { display: none; }
+.answer-reveal.show { display: block; }
+.option-letter {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--border);
+    font-size: 0.75rem; font-weight: 700;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'dashboard' %}" class="text-muted" style="font-size:0.875rem; text-decoration:none;">
+        <i class="bi bi-grid-1x2 me-1"></i>Dashboard
+    </a>
+    <span class="text-muted">/</span>
+    <span style="font-size:0.875rem; font-weight:600;">{{ material.title }}</span>
+</div>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">❓ Quiz</h3>
+        <p class="text-muted mb-0" style="font-size:0.875rem;">{{ material.title }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-ai">
+                <i class="bi bi-arrow-clockwise me-1"></i>New Quiz
+            </button>
+        </form>
+        <a href="{% url 'summary' material.id %}" class="btn btn-sm btn-outline-primary">Summary</a>
+        <a href="{% url 'chat' material.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+    </div>
+</div>
+
+{% if mcq_data or short_data %}
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-mcq">
+            🅰 Multiple Choice ({{ mcq_data.questions|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-short">
+            ✏️ Short Answer ({{ short_data.questions|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- MCQ Tab -->
+    <div class="tab-pane fade show active" id="tab-mcq">
+        {% if mcq_data %}
+        <div id="quiz-score" class="alert alert-info mb-4" style="display:none;">
+            <strong>Your Score: <span id="score-text"></span></strong>
+        </div>
+
+        {% for q in mcq_data.questions %}
+        <div class="card mb-3" id="q{{ q.id }}">
+            <div class="card-body p-4">
+                <p class="fw-semibold mb-3" style="font-size:0.95rem;">
+                    <span class="badge rounded-pill me-2" style="background:var(--primary-light);color:var(--primary);">Q{{ q.id }}</span>
+                    {{ q.question }}
+                </p>
+
+                <div class="options-group">
+                    {% for letter, text in q.options.items %}
+                    <div class="quiz-option d-flex align-items-center p-2 rounded-3 mb-2"
+                         data-question="{{ q.id }}"
+                         data-option="{{ letter }}"
+                         data-correct="{{ q.correct_answer }}"
+                         onclick="selectAnswer(this)">
+                        <span class="option-letter">{{ letter }}</span>
+                        <span style="font-size:0.9rem;">{{ text }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="answer-reveal mt-3 p-3 rounded-3" id="reveal-{{ q.id }}" style="background:#f0fdf4; border:1px solid #86efac;">
+                    <p class="mb-1" style="font-size:0.85rem;">
+                        <strong>✅ Correct Answer: {{ q.correct_answer }}</strong>
+                    </p>
+                    {% if q.explanation %}
+                    <p class="mb-0 text-muted" style="font-size:0.82rem;">
+                        <i class="bi bi-info-circle me-1"></i>{{ q.explanation }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <button class="btn btn-ai w-100 mt-2" onclick="showAllAnswers()">
+            <i class="bi bi-eye me-2"></i>Reveal All Answers & Check Score
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Short Questions Tab -->
+    <div class="tab-pane fade" id="tab-short">
+        {% if short_data %}
+        {% for q in short_data.questions %}
+        <div class="card mb-3">
+            <div class="card-body p-4">
+                <p class="fw-semibold mb-3" style="font-size:0.95rem;">
+                    <span class="badge rounded-pill me-2" style="background:#fef3c7; color:#92400e;">Q{{ q.id }}</span>
+                    {{ q.question }}
+                </p>
+
+                <textarea class="form-control mb-3" placeholder="Write your answer here..." rows="3"
+                          style="font-size:0.875rem;"></textarea>
+
+                <button class="btn btn-sm btn-outline-primary" onclick="
+                    this.closest('.card-body').querySelector('.model-answer').style.display='block';
+                    this.style.display='none';
+                ">
+                    <i class="bi bi-eye me-1"></i>Show Model Answer
+                </button>
+
+                <div class="model-answer mt-3" style="display:none;">
+                    <div class="p-3 rounded-3" style="background:#f0fdf4; border:1px solid #86efac;">
+                        <p class="fw-semibold mb-2" style="font-size:0.85rem;">📋 Model Answer:</p>
+                        <p style="font-size:0.875rem; margin-bottom:0.75rem;">{{ q.model_answer }}</p>
+                        {% if q.key_points %}
+                        <p class="fw-semibold mb-1" style="font-size:0.8rem;">Key Points to Include:</p>
+                        <ul style="font-size:0.82rem; margin:0; padding-left:1.25rem;">
+                            {% for point in q.key_points %}
+                            <li>{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <div style="font-size:3rem; margin-bottom:1rem;">❓</div>
+    <h5 class="fw-bold">No quiz generated yet</h5>
+    <p class="text-muted mb-4">Generate 10 MCQs and 5 short answer questions.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ai">
+            <i class="bi bi-magic me-2"></i>Generate Quiz
+        </button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let answered = {};
+let total = {{ mcq_data.questions|length|default:0 }};
+
+function selectAnswer(el) {
+    const qId = el.dataset.question;
+    const chosen = el.dataset.option;
+    const correct = el.dataset.correct;
+
+    // Only answer once
+    if (answered[qId]) return;
+    answered[qId] = chosen;
+
+    const container = el.closest('.options-group');
+    container.querySelectorAll('.quiz-option').forEach(opt => {
+        opt.style.pointerEvents = 'none';
+        if (opt.dataset.option === correct) {
+            opt.classList.add('correct');
+            opt.querySelector('.option-letter').style.background = '#10b981';
+            opt.querySelector('.option-letter').style.color = 'white';
+        } else if (opt.dataset.option === chosen && chosen !== correct) {
+            opt.classList.add('wrong');
+            opt.querySelector('.option-letter').style.background = '#ef4444';
+            opt.querySelector('.option-letter').style.color = 'white';
+        }
+    });
+
+    // Show explanation
+    document.getElementById('reveal-' + qId).classList.add('show');
+}
+
+function showAllAnswers() {
+    document.querySelectorAll('.quiz-option').forEach(opt => {
+        const qId = opt.dataset.question;
+        const correct = opt.dataset.correct;
+        opt.style.pointerEvents = 'none';
+        if (opt.dataset.option === correct) {
+            opt.classList.add('correct');
+        }
+        if (!answered[qId]) answered[qId] = null;
+    });
+
+    document.querySelectorAll('.answer-reveal').forEach(r => r.classList.add('show'));
+
+    // Show score
+    let correct = 0;
+    Object.entries(answered).forEach(([qId, chosen]) => {
+        const correctEl = document.querySelector(`[data-question="${qId}"][data-correct]`);
+        if (correctEl && chosen === correctEl.dataset.correct) correct++;
+    });
+
+    const scoreEl = document.getElementById('quiz-score');
+    const scoreText = document.getElementById('score-text');
+    scoreText.textContent = `${correct} / ${total} (${Math.round(correct/total*100)}%)`;
+    scoreEl.style.display = 'block';
+    scoreEl.className = correct >= total*0.7 ? 'alert alert-success mb-4' : 'alert alert-warning mb-4';
+    scoreEl.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

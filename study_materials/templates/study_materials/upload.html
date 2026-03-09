@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Material — AI Study Assistant{% endblock %}
+{% block page_title %}Upload Study Material{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-cloud-upload me-2" style="color:var(--primary);"></i>
+                    Upload New Material
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:0.875rem;">Title *</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger mt-1" style="font-size:0.8rem;">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Give your material a descriptive name</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:0.875rem;">Description (optional)</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold" style="font-size:0.875rem;">File *</label>
+
+                        <!-- Upload drop zone -->
+                        <div id="drop-zone" style="
+                            border: 2px dashed var(--border);
+                            border-radius: 12px;
+                            padding: 2rem;
+                            text-align: center;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            background: var(--bg);
+                        ">
+                            <div style="font-size:2.5rem; margin-bottom:0.5rem;">📎</div>
+                            <p class="mb-1 fw-semibold" style="font-size:0.9rem;">Drop your file here or click to browse</p>
+                            <p class="text-muted mb-2" style="font-size:0.78rem;">Supported: PDF, DOCX, TXT · Max 10MB</p>
+                            {{ form.file }}
+                        </div>
+
+                        {% if form.file.errors %}
+                            <div class="text-danger mt-1" style="font-size:0.8rem;">{{ form.file.errors.0 }}</div>
+                        {% endif %}
+
+                        <div id="file-preview" class="mt-2" style="display:none;">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded-3" style="background:var(--primary-light);">
+                                <span id="file-icon" style="font-size:1.2rem;"></span>
+                                <span id="file-name" style="font-size:0.85rem; font-weight:600; color:var(--primary-dark);"></span>
+                                <span id="file-size" style="font-size:0.75rem; color:var(--text-muted);"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Processing info box -->
+                    <div class="alert alert-info py-2 px-3 mb-4" style="font-size:0.8rem;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        After upload, your file will be processed automatically: text extraction → chunking → vector indexing.
+                        Large files may take 30–60 seconds.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-ai flex-fill fw-semibold">
+                            <i class="bi bi-cloud-upload me-2"></i>Upload & Process
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// File input preview
+const fileInput = document.querySelector('input[type="file"]');
+const dropZone = document.getElementById('drop-zone');
+const filePreview = document.getElementById('file-preview');
+
+fileInput.style.display = 'none';
+dropZone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) showPreview(file);
+});
+
+// Drag and drop
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--primary)';
+    dropZone.style.background = 'var(--primary-light)';
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background = 'var(--bg)';
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background = 'var(--bg)';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+        showPreview(file);
+    }
+});
+
+function showPreview(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const icons = { pdf: '📕', docx: '📘', txt: '📄' };
+    document.getElementById('file-icon').textContent = icons[ext] || '📄';
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = formatSize(file.size);
+    filePreview.style.display = 'block';
+}
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+</script>
+{% endblock %}

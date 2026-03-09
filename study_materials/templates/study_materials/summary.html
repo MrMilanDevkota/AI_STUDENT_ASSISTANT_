@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Summary — {{ material.title }}{% endblock %}
+{% block page_title %}Summary{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb & Header -->
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{% url 'dashboard' %}" class="text-muted" style="font-size:0.875rem; text-decoration:none;">
+        <i class="bi bi-grid-1x2 me-1"></i>Dashboard
+    </a>
+    <span class="text-muted">/</span>
+    <span style="font-size:0.875rem; font-weight:600;">{{ material.title }}</span>
+</div>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">📝 Summaries</h3>
+        <p class="text-muted mb-0" style="font-size:0.875rem;">{{ material.title }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-ai">
+                <i class="bi bi-arrow-clockwise me-1"></i>Regenerate
+            </button>
+        </form>
+        <!-- Quick nav to other features -->
+        <a href="{% url 'quiz' material.id %}" class="btn btn-sm btn-outline-primary">Quiz</a>
+        <a href="{% url 'flashcards' material.id %}" class="btn btn-sm btn-outline-primary">Flashcards</a>
+        <a href="{% url 'chat' material.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+    </div>
+</div>
+
+{% if summaries %}
+<!-- Tabs -->
+<ul class="nav nav-pills mb-4" id="summaryTabs">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-short">
+            ⚡ Quick Summary
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-detailed">
+            📖 Detailed Summary
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-concepts">
+            🔑 Key Concepts
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Short Summary -->
+    <div class="tab-pane fade show active" id="tab-short">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0">⚡ Quick Summary</h6>
+                <small class="text-muted">~300 words</small>
+            </div>
+            <div class="card-body p-4">
+                {% if summaries.short_summary %}
+                    <div class="summary-content">{{ summaries.short_summary|linebreaks }}</div>
+                {% else %}
+                    <p class="text-muted">No short summary available. Click Regenerate.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Summary -->
+    <div class="tab-pane fade" id="tab-detailed">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0">📖 Detailed Summary</h6>
+                <small class="text-muted">500–800 words</small>
+            </div>
+            <div class="card-body p-4">
+                {% if summaries.detailed_summary %}
+                    <div class="summary-content">{{ summaries.detailed_summary|linebreaks }}</div>
+                {% else %}
+                    <p class="text-muted">No detailed summary available. Click Regenerate.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Concepts -->
+    <div class="tab-pane fade" id="tab-concepts">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold mb-0">🔑 Key Concepts</h6>
+                <small class="text-muted">10–15 concepts</small>
+            </div>
+            <div class="card-body p-4">
+                {% if summaries.key_concepts %}
+                    <div class="summary-content">{{ summaries.key_concepts|linebreaks }}</div>
+                {% else %}
+                    <p class="text-muted">No key concepts available. Click Regenerate.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <div style="font-size:3rem; margin-bottom:1rem;">📝</div>
+    <h5 class="fw-bold">No summaries yet</h5>
+    <p class="text-muted mb-4">Generate AI summaries for this material.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ai">
+            <i class="bi bi-magic me-2"></i>Generate Summaries
+        </button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

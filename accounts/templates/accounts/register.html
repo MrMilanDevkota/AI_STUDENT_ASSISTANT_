@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Register — AI Study Assistant{% endblock %}
+
+{% block auth_content %}
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h2 class="fw-bold mb-1" style="font-size:1.4rem;">Create your account</h2>
+        <p class="text-muted mb-4" style="font-size:0.875rem;">Start studying smarter with AI</p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.85rem;">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="text-danger mt-1" style="font-size:0.8rem;">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.85rem;">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="text-danger mt-1" style="font-size:0.8rem;">{{ form.email.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.85rem;">Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <div class="text-danger mt-1" style="font-size:0.8rem;">{{ form.password1.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold" style="font-size:0.85rem;">Confirm Password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <div class="text-danger mt-1" style="font-size:0.8rem;">{{ form.password2.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                <i class="bi bi-person-plus me-2"></i>Create Account
+            </button>
+        </form>
+
+        <hr class="my-4">
+        <p class="text-center mb-0" style="font-size:0.875rem;">
+            Already have an account?
+            <a href="{% url 'login' %}" class="fw-semibold" style="color:var(--primary);">Sign in</a>
+        </p>
+    </div>
+</div>
+{% endblock auth_content %}
