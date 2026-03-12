@@ -10,8 +10,8 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 # Default model settings
-DEFAULT_MODEL = "gemini-2.5-flash-lite"   # Fast, free-tier friendly
-FALLBACK_MODEL = "gemini-1.5-flash"    # Higher quality, lower rate limits
+DEFAULT_MODEL = "gemini-2.5-flash-lite"   
+FALLBACK_MODEL = "gemini-2.5-flash"    
 
 
 def get_llm(temperature: float = 0.3, max_tokens: int = 2048):
